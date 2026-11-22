@@ -1,7 +1,6 @@
 from app.schemas import IncidentReport
 from app.tools.remediation import BY_COMMAND
 
-
 LOW = IncidentReport(
     root_cause="Insufficient evidence for a diagnosis", confidence_score=0.4,
     cited_runbook_ids=[], proposed_commands=[], requires_approval=False,
