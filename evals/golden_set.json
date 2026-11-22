@@ -1,0 +1,202 @@
+[
+  {
+    "id": "case-01",
+    "ticket": "Production writes fail with ENOSPC, but df -h has free space. Inode exhaustion suspected.",
+    "expected_runbook_ids": [
+      "RB-LNX-001"
+    ],
+    "ground_truth_remediation": "logrotate -f /etc/logrotate.d/sentinel-demo",
+    "expected_answer": "A large population of tiny cache or spool files exhausted filesystem inodes even though block space remains; verify inode use before deleting anything. Proposed simulation (requires approval): logrotate -f /etc/logrotate.d/sentinel-demo",
+    "requires_approval": true
+  },
+  {
+    "id": "case-02",
+    "ticket": "Our demo unit shows status=1/FAILURE and start-limit-hit after changing its config.",
+    "expected_runbook_ids": [
+      "RB-LNX-002"
+    ],
+    "ground_truth_remediation": "systemctl restart sentinel-demo",
+    "expected_answer": "A service repeatedly exited after a configuration change, causing systemd start-rate limiting; inspect the first failure before considering a restart. Proposed simulation (requires approval): systemctl restart sentinel-demo",
+    "requires_approval": true
+  },
+  {
+    "id": "case-03",
+    "ticket": "Worker terminated OOMKilled during a large batch; memory hits its cgroup limit.",
+    "expected_runbook_ids": [
+      "RB-LNX-003"
+    ],
+    "ground_truth_remediation": "systemctl restart sentinel-worker",
+    "expected_answer": "Memory consumption exceeded the process or container memory boundary; correlate the OOM event with limits and workload before selecting a fix. Proposed simulation (requires approval): systemctl restart sentinel-worker",
+    "requires_approval": true
+  },
+  {
+    "id": "case-04",
+    "ticket": "IAM AccessDenied after a role deployment; caller is not authorized to perform the API action.",
+    "expected_runbook_ids": [
+      "RB-AWS-001"
+    ],
+    "ground_truth_remediation": "sentinel-sim iam-restore-reviewed-policy",
+    "expected_answer": "The effective IAM principal lacks an allowed action or is constrained by an explicit deny, boundary, session policy or organization SCP. Proposed simulation (requires approval): sentinel-sim iam-restore-reviewed-policy",
+    "requires_approval": true
+  },
+  {
+    "id": "case-05",
+    "ticket": "EC2 SSH timeout from our bastion; port 22: Connection timed out before login.",
+    "expected_runbook_ids": [
+      "RB-AWS-002"
+    ],
+    "ground_truth_remediation": "sentinel-sim restore-approved-ssh-rule",
+    "expected_answer": "The SSH TCP path is unreachable because of routing, security groups, NACLs or host reachability; a timeout is distinct from Permission denied. Proposed simulation (requires approval): sentinel-sim restore-approved-ssh-rule",
+    "requires_approval": true
+  },
+  {
+    "id": "case-06",
+    "ticket": "Application gets S3 403 for new SSE-KMS objects in a private bucket.",
+    "expected_runbook_ids": [
+      "RB-AWS-003"
+    ],
+    "ground_truth_remediation": "sentinel-sim repair-reviewed-s3-policy",
+    "expected_answer": "S3 rejected the request because effective bucket/object access or KMS decryption permissions do not authorize the requesting role. Proposed simulation (requires approval): sentinel-sim repair-reviewed-s3-policy",
+    "requires_approval": true
+  },
+  {
+    "id": "case-07",
+    "ticket": "App hostname returns DNS NXDOMAIN after a zone migration.",
+    "expected_runbook_ids": [
+      "RB-NET-001"
+    ],
+    "ground_truth_remediation": "sentinel-sim restore-reviewed-dns-record",
+    "expected_answer": "The resolver returned a negative answer for the requested name; verify the authoritative zone, record spelling and negative cache lifetime. Proposed simulation (requires approval): sentinel-sim restore-reviewed-dns-record",
+    "requires_approval": true
+  },
+  {
+    "id": "case-08",
+    "ticket": "Production outage: HTTP 502 Bad Gateway immediately after upstream port changed.",
+    "expected_runbook_ids": [
+      "RB-NET-002"
+    ],
+    "ground_truth_remediation": "sentinel-sim restore-healthy-upstream",
+    "expected_answer": "A gateway could not obtain a valid response from its upstream; verify backend health, routing, protocol and connection limits. Proposed simulation (requires approval): sentinel-sim restore-healthy-upstream",
+    "requires_approval": true
+  },
+  {
+    "id": "case-09",
+    "ticket": "Client reports CERT_HAS_EXPIRED although renewal job succeeded yesterday.",
+    "expected_runbook_ids": [
+      "RB-NET-003"
+    ],
+    "ground_truth_remediation": "sentinel-sim deploy-renewed-certificate",
+    "expected_answer": "The served certificate or an intermediate is outside its validity period; inspect the complete chain and deployment target. Proposed simulation (requires approval): sentinel-sim deploy-renewed-certificate",
+    "requires_approval": true
+  },
+  {
+    "id": "case-10",
+    "ticket": "Deployment has CrashLoopBackOff after startup configuration change; prior logs show exit 1.",
+    "expected_runbook_ids": [
+      "RB-K8S-001"
+    ],
+    "ground_truth_remediation": "kubectl rollout undo deploy/sentinel-demo",
+    "expected_answer": "A container repeatedly exits after startup, so kubelet backs off restarts; previous logs and termination state identify the underlying application failure. Proposed simulation (requires approval): kubectl rollout undo deploy/sentinel-demo",
+    "requires_approval": true
+  },
+  {
+    "id": "case-11",
+    "ticket": "Pod stuck ImagePullBackOff with manifest unknown after releasing a new image tag.",
+    "expected_runbook_ids": [
+      "RB-K8S-002"
+    ],
+    "ground_truth_remediation": "sentinel-sim restore-known-image-digest",
+    "expected_answer": "The node cannot fetch the referenced image because the digest/tag, registry credentials, network path or platform is invalid. Proposed simulation (requires approval): sentinel-sim restore-known-image-digest",
+    "requires_approval": true
+  },
+  {
+    "id": "case-12",
+    "ticket": "Active Directory lockout keeps returning; event 4740 points to a scheduled-task host.",
+    "expected_runbook_ids": [
+      "RB-ID-001"
+    ],
+    "ground_truth_remediation": "sentinel-sim unlock-verified-demo-account",
+    "expected_answer": "Repeated failed authentication locked the account; identify the source and validate the user before unlocking. Proposed simulation (requires approval): sentinel-sim unlock-verified-demo-account",
+    "requires_approval": true
+  },
+  {
+    "id": "case-13",
+    "ticket": "Windows deployment fails with 0x80070005 Access Denied on the application directory.",
+    "expected_runbook_ids": [
+      "RB-ID-002"
+    ],
+    "ground_truth_remediation": "sentinel-sim restore-reviewed-windows-acl",
+    "expected_answer": "Windows denied the requested operation under the current token, ACL, integrity level or policy; identify the exact denied object before changing permissions. Proposed simulation (requires approval): sentinel-sim restore-reviewed-windows-acl",
+    "requires_approval": true
+  },
+  {
+    "id": "case-14",
+    "ticket": "Managed laptop asks for BitLocker recovery after an approved firmware update.",
+    "expected_runbook_ids": [
+      "RB-ID-003"
+    ],
+    "ground_truth_remediation": "sentinel-sim authorize-bitlocker-recovery",
+    "expected_answer": "Boot integrity measurements or TPM state changed, so BitLocker requires recovery; verify device identity and authorized firmware changes first. Proposed simulation (requires approval): sentinel-sim authorize-bitlocker-recovery",
+    "requires_approval": true
+  },
+  {
+    "id": "case-15",
+    "ticket": "VPN RADIUS timeout after a firewall update; server responds locally but gateway sees nothing.",
+    "expected_runbook_ids": [
+      "RB-ID-004"
+    ],
+    "ground_truth_remediation": "sentinel-sim restore-radius-route",
+    "expected_answer": "The VPN gateway did not receive a timely RADIUS response; distinguish network loss, shared-secret mismatch and a slow authentication backend. Proposed simulation (requires approval): sentinel-sim restore-radius-route",
+    "requires_approval": true
+  },
+  {
+    "id": "case-16",
+    "ticket": "Container exit 137 and OOMKilled; can you investigate memory pressure?",
+    "expected_runbook_ids": [
+      "RB-LNX-003"
+    ],
+    "ground_truth_remediation": "systemctl restart sentinel-worker",
+    "expected_answer": "Memory consumption exceeded the process or container memory boundary; correlate the OOM event with limits and workload before selecting a fix. Proposed simulation (requires approval): systemctl restart sentinel-worker",
+    "requires_approval": true
+  },
+  {
+    "id": "case-17",
+    "ticket": "Reverse proxy shows HTTP 502 and upstream prematurely closed connection under load.",
+    "expected_runbook_ids": [
+      "RB-NET-002"
+    ],
+    "ground_truth_remediation": "sentinel-sim restore-healthy-upstream",
+    "expected_answer": "A gateway could not obtain a valid response from its upstream; verify backend health, routing, protocol and connection limits. Proposed simulation (requires approval): sentinel-sim restore-healthy-upstream",
+    "requires_approval": true
+  },
+  {
+    "id": "case-18",
+    "ticket": "Service sees E_ACCESSDENIED / 0x80070005 when writing its deployment folder.",
+    "expected_runbook_ids": [
+      "RB-ID-002"
+    ],
+    "ground_truth_remediation": "sentinel-sim restore-reviewed-windows-acl",
+    "expected_answer": "Windows denied the requested operation under the current token, ACL, integrity level or policy; identify the exact denied object before changing permissions. Proposed simulation (requires approval): sentinel-sim restore-reviewed-windows-acl",
+    "requires_approval": true
+  },
+  {
+    "id": "case-19",
+    "ticket": "ErrImagePull and pull access denied appeared after registry secret rotation.",
+    "expected_runbook_ids": [
+      "RB-K8S-002"
+    ],
+    "ground_truth_remediation": "sentinel-sim restore-known-image-digest",
+    "expected_answer": "The node cannot fetch the referenced image because the digest/tag, registry credentials, network path or platform is invalid. Proposed simulation (requires approval): sentinel-sim restore-known-image-digest",
+    "requires_approval": true
+  },
+  {
+    "id": "case-20",
+    "ticket": "S3 AccessDenied for s3:GetObject in a cross-account SSE-KMS upload path.",
+    "expected_runbook_ids": [
+      "RB-AWS-003"
+    ],
+    "ground_truth_remediation": "sentinel-sim repair-reviewed-s3-policy",
+    "expected_answer": "S3 rejected the request because effective bucket/object access or KMS decryption permissions do not authorize the requesting role. Proposed simulation (requires approval): sentinel-sim repair-reviewed-s3-policy",
+    "requires_approval": true
+  }
+]
