@@ -1,0 +1,62 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="dark">
+  <title>SentinelOps — Incident console</title>
+  <link rel="stylesheet" href="/static/style.css">
+  <script defer src="/static/app.js"></script>
+</head>
+<body>
+  <main>
+    <header class="masthead">
+      <a class="brand" href="/" aria-label="SentinelOps home"><span class="mark">S</span>Sentinel<span>Ops</span></a>
+      <div class="header-meta"><span id="connection" class="badge">Connecting…</span><a href="/docs" target="_blank" rel="noopener">API docs ↗</a></div>
+    </header>
+    <section class="intro">
+      <p class="eyebrow">INCIDENT RESPONSE · HUMAN CONTROL</p>
+      <h1>From noisy ticket<br>to a <em>clear next step.</em></h1>
+      <p class="subtitle">Investigate with runbook evidence. Review the plan.<br>Keep every change in your hands.</p>
+      <div class="mode-note"><span class="dot"></span><span id="mode">Sandbox simulation · no infrastructure changes</span></div>
+    </section>
+    <div class="workspace">
+      <section class="panel intake" aria-labelledby="intake-title">
+        <div class="panel-heading"><span class="step">01</span><h2 id="intake-title">Describe the incident</h2></div>
+        <label for="sample">Start with an example</label>
+        <select id="sample">
+          <option value="gateway">HTTP 502 · gateway outage</option>
+          <option value="memory">OOMKilled · memory pressure</option>
+          <option value="windows">0x80070005 · access denied</option>
+          <option value="kubernetes">CrashLoopBackOff · startup failure</option>
+          <option value="unknown">Unknown incident · escalation</option>
+        </select>
+        <label for="ticket">Incident ticket</label>
+        <textarea id="ticket" rows="8" maxlength="16000" spellcheck="false"></textarea>
+        <p class="field-note">Use synthetic examples while exploring. Covered credentials and identifiers are redacted before analysis.</p>
+        <details><summary>Access token (if your server requires one)</summary><label for="token">Bearer token</label><input id="token" type="password" autocomplete="off" placeholder="Optional API access token"></details>
+        <button id="triage" class="primary">Analyze incident <span aria-hidden="true">→</span></button>
+        <p id="message" class="message" role="status" aria-live="polite"></p>
+      </section>
+      <section class="panel result" aria-labelledby="result-title">
+        <div class="panel-heading"><span class="step">02</span><h2 id="result-title">Review the evidence</h2><span id="status" class="badge muted">Ready when you are</span></div>
+        <div id="empty" class="empty"><div class="orbit" aria-hidden="true">⌁</div><h3>A plan you can inspect.</h3><p>Your diagnosis, cited runbooks and proposed actions will appear here. Mutating plans pause for your decision.</p><div class="facts"><span>15 runbooks</span><span>5 domains</span><span>Approval gated</span></div></div>
+        <div id="report" hidden>
+          <div class="metrics"><div><span>Severity</span><strong id="severity"></strong></div><div><span>Domain</span><strong id="category"></strong></div><div><span>Confidence</span><strong id="confidence"></strong></div></div>
+          <h3>Root-cause hypothesis</h3><p id="cause" class="cause"></p>
+          <h3>Cited runbooks</h3><div id="citations" class="citations"></div>
+          <h3>Proposed simulation</h3><pre id="commands"></pre>
+          <details><summary>Redacted ticket &amp; thread</summary><pre id="redacted"></pre><p class="thread" id="thread"></p></details>
+          <div id="approval" class="approval" hidden>
+            <h3>Your approval is required</h3><p>Review the fixed sandbox plan before allowing the simulated actions.</p>
+            <label for="note">Reviewer note</label><input id="note" maxlength="2000" placeholder="Optional review note">
+            <div class="decisions"><button id="approve" class="primary">Approve simulation</button><button id="reject" class="secondary">Reject plan</button></div>
+          </div>
+          <div id="execution" hidden><h3>Execution receipts</h3><div id="receipts"></div></div>
+        </div>
+      </section>
+    </div>
+    <footer><span>SentinelOps / incident console</span><span>All remediation is simulated. No shell or cloud changes are executed.</span></footer>
+  </main>
+</body>
+</html>

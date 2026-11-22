@@ -17,6 +17,7 @@ def isolate_settings_environment(monkeypatch):
 def settings(tmp_path):
     return Settings(
         _env_file=None, mock_llm=True, retrieval_backend="mock", qdrant_mode="memory",
+        auto_ingest=False,
         checkpoint_path=str(tmp_path / "checkpoints.sqlite"), use_presidio=False,
         langfuse_public_key="", langfuse_secret_key=None, api_token=None,
     )

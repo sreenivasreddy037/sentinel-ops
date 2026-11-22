@@ -45,40 +45,44 @@ flowchart TD
 
 `interrupt()` intentionally has no exception wrapper. LangGraph restarts that node on resume, so execution lives in a separate downstream node. SQLite receipts keyed by thread/action prevent duplicate simulated effects after execution-node replay.
 
-## Quickstart — three steps
+## Run the project
 
-Prerequisite: Docker Engine/Desktop with Compose v2. The default Compose deployment uses free deterministic mocks and a real Qdrant server, so no OpenAI key is needed.
+Download and extract the [source ZIP](https://github.com/sreenivasreddy037/sentinel-ops/archive/refs/heads/main.zip), or clone this repository. You do not need an OpenAI account for the free demo.
 
-**1. Start the stack**
+With Python 3.9+ and pip installed, run **`bash start.sh`** on Mac/Linux or **`start.cmd`** on Windows. The launcher installs project-local uv, Python 3.12 and the locked dependencies, indexes the bundled runbooks, and opens the incident console at **http://127.0.0.1:8000**. A prepared Apple silicon Mac runtime is also produced by CI.
+
+See [first-time setup and troubleshooting](docs/GETTING_STARTED.md) for all launch options, prerequisites and the optional real AI mode.
+
+## Docker quickstart — three steps
+
+Prerequisite: Docker Engine/Desktop with Compose v2. Python and Qdrant run inside the containers. The default demo needs no API key.
+
+**1. Start and wait for automatic indexing**
 
 ```bash
-docker compose up --build
+docker compose up --build --detach --wait
 ```
 
-Run the remaining commands in a second terminal. API: `http://localhost:8000`; Swagger: `http://localhost:8000/docs`.
+**2. Open the incident console**
 
-**2. Ingest the runbooks, then submit an incident**
+Visit **http://localhost:8000**, choose an example and click **Analyze incident**. The console shows the redacted ticket, cited hypothesis and proposed commands.
+
+**3. Approve or reject the sandbox plan**
+
+Use the console buttons. Approved plans produce simulation receipts; rejected plans execute nothing. Stop with `docker compose down`.
+
+Prefer the API? Startup already indexed the knowledge base; `/ingest` is available for explicit reindexing.
 
 ```bash
-curl -sS -X POST http://localhost:8000/ingest
 curl -sS -X POST http://localhost:8000/triage \
   -H 'Content-Type: application/json' \
-  -d '{"text":"Production outage: HTTP 502 Bad Gateway after an upstream deployment. Contact ops@example.test; host 10.0.0.8; password=demo-only"}'
-```
+  -d '{"text":"Production outage: HTTP 502 Bad Gateway after an upstream deployment"}'
 
-Expect `status: "awaiting_approval"`, an `IncidentReport`, a UUID `thread_id` and an empty execution log. Copy the returned UUID.
-
-**3. Inspect and approve the plan**
-
-```bash
 THREAD_ID='<returned UUID>'
-curl -sS "http://localhost:8000/threads/$THREAD_ID"
 curl -sS -X POST "http://localhost:8000/approve/$THREAD_ID" \
   -H 'Content-Type: application/json' \
   -d '{"approved":true,"reviewer_note":"Reviewed the proposed sandbox plan"}'
 ```
-
-Expect `status: "completed"` with `mode: "simulation"` receipts. Use `"approved": false` to reject. A second approval returns HTTP 409. Shut down with `docker compose down`; persistent volumes retain checkpoints and Qdrant data.
 
 ## Local development with Python 3.12 and uv
 
@@ -117,7 +121,9 @@ Optional Langfuse requires both `LANGFUSE_PUBLIC_KEY` and `LANGFUSE_SECRET_KEY`;
 
 | Endpoint | Purpose | Important responses |
 |---|---|---|
+| `GET /` | Browser incident console | Analyze, inspect, approve or reject |
 | `GET /health` | Liveness and explicit operating mode | 200; does not claim Qdrant readiness |
+| `GET /ready` | Knowledge-store readiness | 200 indexed; 503 unavailable |
 | `POST /ingest` | Idempotently index 15 local Markdown runbooks | Runbook count, chunk count, backend |
 | `POST /triage` | Accept `text` and optional UUID `thread_id` | Completed, awaiting approval or escalated; 409 for empty KB / reused ID |
 | `POST /approve/{thread_id}` | Resume with strict Boolean `approved` and optional `reviewer_note` | Completed or denied; 409 if no pending approval |
@@ -217,5 +223,7 @@ uv sync --frozen
 ```
 
 The public repository includes conventional commits for engineering constraints, core implementation, tests, delivery and documentation. Local Git metadata could not be written in the original sandbox, so the remote history was created through the connected GitHub service. Clone the repository to obtain a normal local checkout with that history.
+
+For a normal first start, use the launcher described above; all per-project runtime installations stay out of Git.
 
 To create a separate Desktop source copy, run `python3 scripts/export_desktop.py`; it excludes credentials and incident data and refuses to overwrite an existing folder. Never add `.env`, keys, model caches or incident databases to Git.

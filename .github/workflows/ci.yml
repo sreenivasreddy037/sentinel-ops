@@ -8,6 +8,8 @@ on:
         description: Run paid OpenAI RAG evaluation (requires repository secret)
         type: boolean
         default: false
+env:
+  DEEPEVAL_TELEMETRY_OPT_OUT: "YES"
 permissions:
   contents: read
 jobs:
@@ -27,6 +29,7 @@ jobs:
           MOCK_LLM: "true"
           RUN_LLM_EVALS: "false"
       - run: MOCK_LLM=true uv run python scripts/demo_run.py
+      - run: uv run python scripts/native_smoke.py
       - run: docker compose config --quiet
       - uses: actions/upload-artifact@v4
         if: always()
@@ -46,6 +49,57 @@ jobs:
           python3 scripts/container_smoke.py
       - run: docker compose down --volumes
         if: always()
+  retrieval-models:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v6
+        with:
+          version: "0.9.11"
+          python-version: "3.12"
+      - run: uv sync --frozen
+      - run: uv run pytest -v -m models
+        env:
+          MOCK_LLM: "true"
+          RUN_MODEL_TESTS: "true"
+          RUN_LLM_EVALS: "false"
+  native-distribution:
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [macos-15, windows-latest]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v6
+        with:
+          version: "0.9.11"
+          python-version: "3.12"
+      - run: uv sync --frozen
+      - run: uv run pytest -v tests/test_distribution.py
+        env:
+          MOCK_LLM: "true"
+      - run: uv run python scripts/native_smoke.py
+      - name: Restore developer dependencies for the prepared Mac runtime
+        if: runner.os == 'macOS'
+        run: uv sync --frozen
+      - name: Build prepared Mac runtime
+        if: runner.os == 'macOS'
+        run: uv run python scripts/build_portable.py
+      - name: Verify the relocated Mac download
+        if: runner.os == 'macOS'
+        run: |
+          mkdir -p "$RUNNER_TEMP/sentinel-relocated"
+          tar -xzf dist/SentinelOps-macos-arm64.tar.gz -C "$RUNNER_TEMP/sentinel-relocated"
+          cd "$RUNNER_TEMP/sentinel-relocated/SentinelOps"
+          bash start.sh --verify
+          .tools/python-runtime/bin/python3.12 scripts/portable_runner.py scripts.native_smoke
+      - uses: actions/upload-artifact@v4
+        if: runner.os == 'macOS'
+        with:
+          name: SentinelOps-macos-arm64
+          path: dist/SentinelOps-macos-arm64.tar.gz
+          retention-days: 30
   rag-evaluation:
     if: github.event_name == 'workflow_dispatch' && inputs.run_quality_eval
     runs-on: ubuntu-latest

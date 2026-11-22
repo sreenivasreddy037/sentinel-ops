@@ -19,6 +19,10 @@ def post(path, body):
 
 
 def main():
+    with urllib.request.urlopen(BASE + "/ready", timeout=15) as response:
+        assert json.load(response)["status"] == "ready"
+    with urllib.request.urlopen(BASE, timeout=15) as response:
+        assert "SentinelOps" in response.read().decode()
     assert post("/ingest", {})["runbooks"] == 15
     paused = post("/triage", {"text": "Production outage HTTP 502 Bad Gateway after a release"})
     assert paused["status"] == "awaiting_approval", paused

@@ -16,3 +16,6 @@ __pycache__/
 dist/
 work/
 outputs/
+
+.tools/
+*.log

@@ -3,7 +3,7 @@
 from pathlib import Path
 from typing import Literal
 
-from pydantic import SecretStr, model_validator
+from pydantic import Field, SecretStr, model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -27,6 +27,8 @@ class Settings(BaseSettings):
     langfuse_secret_key: SecretStr | None = None
     langfuse_host: str = "https://cloud.langfuse.com"
     use_presidio: bool = True
+    auto_ingest: bool = True
+    startup_attempts: int = Field(default=8, ge=1, le=20)
 
     @model_validator(mode="after")
     def validate_modes(self):

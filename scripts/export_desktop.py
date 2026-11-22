@@ -10,7 +10,7 @@ SOURCE = Path(__file__).resolve().parents[1]
 ENTRIES = [
     "AGENTS.md", "README.md", "pyproject.toml", "uv.lock", ".python-version", ".env.example",
     ".gitignore", ".dockerignore", "Dockerfile", "docker-compose.yml", ".github", "app", "data",
-    "scripts", "tests", "evals", "docs",
+    "scripts", "tests", "evals", "docs", "start.sh", "start.cmd", "Start-SentinelOps.command",
 ]
 
 
@@ -35,7 +35,7 @@ def main():
             else:
                 shutil.copy2(original, target)
         # A source-only export is intentional: no .env, caches or incident state.
-        print(f"Created {destination}. Run scripts/initialize_git.sh there after installing uv/Docker.")
+        print(f"Created {destination}. Launch with bash start.sh; see docs/GETTING_STARTED.md.")
     except Exception:
         print(f"Export incomplete. Review the partially created folder: {destination}")
         raise

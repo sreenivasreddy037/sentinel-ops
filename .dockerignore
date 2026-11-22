@@ -10,3 +10,6 @@ __pycache__
 work
 outputs
 *.sqlite*
+
+.tools
+*.log

@@ -21,7 +21,7 @@ The original incident is sanitized before graph.invoke: a checkpointer saves inp
 
 ## Startup and readiness
 
-The health endpoint is liveness, not dependency readiness. Call `/ingest` after startup and require a successful response before sending tickets. Qdrant's Compose dependency is `service_started`; an early ingest can fail while Qdrant initializes. Retry ingestion once Qdrant is available. Model mode downloads the embedding/reranking assets on first initialization; bake or warm the cache for a controlled rollout.
+The health endpoint is liveness. `/ready` verifies the indexed knowledge store. With `AUTO_INGEST=true` (default), lifespan startup indexes runbooks before serving requests and retries a briefly unavailable store. Set `AUTO_INGEST=false` only if you deliberately manage indexing yourself. Qdrant's Compose dependency is `service_started`; startup retries indexing while Qdrant initializes. Persistent dependency failures stop API startup instead of silently claiming readiness. Model mode downloads the embedding/reranking assets on first initialization; bake or warm the cache for a controlled rollout.
 
 A practical starting point is 2 CPU cores and 4 GB RAM for the API plus Qdrant, then measure memory under real models and concurrency. These are planning estimates, not tested hardware requirements. Mock mode is much lighter. Container integration needs a Docker engine; Compose syntax validation alone does not establish that the images build or services work.
 

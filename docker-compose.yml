@@ -7,6 +7,7 @@ services:
     environment:
       OPENAI_API_KEY: ${OPENAI_API_KEY:-}
       MOCK_LLM: ${MOCK_LLM:-true}
+      AUTO_INGEST: "true"
       QDRANT_MODE: server
       QDRANT_URL: http://qdrant:6333
       CHECKPOINT_PATH: /srv/sentinel/.sentinel/checkpoints.sqlite

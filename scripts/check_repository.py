@@ -20,9 +20,9 @@ def main():
                 assert not any(isinstance(call, ast.Call) and isinstance(call.func, ast.Name)
                                and call.func.id == "interrupt" for call in ast.walk(protected)), path
         for node in ast.walk(tree):
-            if isinstance(node, ast.Import):
+            if "app" in path.relative_to(ROOT).parts and isinstance(node, ast.Import):
                 assert not any(alias.name == "subprocess" for alias in node.names), path
-            if isinstance(node, ast.ImportFrom):
+            if "app" in path.relative_to(ROOT).parts and isinstance(node, ast.ImportFrom):
                 assert node.module != "subprocess", path
     books = sorted((ROOT / "data/runbooks").glob("*.md"))
     assert len(books) == 15

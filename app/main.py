@@ -1,5 +1,6 @@
 """FastAPI service. Single worker, serialized SQLite operations, optional bearer auth."""
 
+import asyncio
 import logging
 import secrets
 import sqlite3
@@ -11,7 +12,8 @@ from uuid import UUID, uuid4
 
 from fastapi import Depends, FastAPI, HTTPException, Request
 from fastapi.exceptions import RequestValidationError
-from fastapi.responses import JSONResponse
+from fastapi.responses import FileResponse, JSONResponse
+from fastapi.staticfiles import StaticFiles
 from langgraph.checkpoint.sqlite import SqliteSaver
 from langgraph.types import Command
 from pydantic import ValidationError
@@ -110,11 +112,46 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         service = IncidentService(settings or Settings())
         api.state.service = service
         try:
+            if service.settings.auto_ingest:
+                # Qdrant can need a few seconds after Compose starts its container.
+                for attempt in range(service.settings.startup_attempts):
+                    try:
+                        await asyncio.to_thread(service.store.ingest)
+                        break
+                    except Exception:
+                        if attempt + 1 == service.settings.startup_attempts:
+                            raise
+                        logger.warning("Knowledge store not ready; retrying startup")
+                        await asyncio.sleep(min(2 ** attempt, 5))
             yield
         finally:
             service.close()
 
     api = FastAPI(title="SentinelOps", version="0.1.0", lifespan=lifespan)
+    static_dir = Path(__file__).resolve().parent / "static"
+    api.mount("/static", StaticFiles(directory=static_dir), name="static")
+
+    @api.get("/", include_in_schema=False)
+    def dashboard():
+        return FileResponse(static_dir / "index.html", headers={
+            "Content-Security-Policy": "default-src 'self'; script-src 'self'; style-src 'self'; "
+                                       "img-src 'self' data:; frame-ancestors 'none'; base-uri 'self'",
+            "X-Content-Type-Options": "nosniff",
+        })
+
+    @api.get("/ready")
+    def readiness(request: Request):
+        svc = request.app.state.service
+        with svc.lock:
+            try:
+                ready = svc.store.ready()
+            except Exception:
+                ready = False
+        return JSONResponse(status_code=200 if ready else 503, content={
+            "status": "ready" if ready else "not_ready",
+            "execution_mode": "simulation", "mock_llm": svc.settings.mock_llm,
+            "retrieval_backend": svc.settings.retrieval_backend,
+        })
 
     @api.exception_handler(RequestValidationError)
     async def validation_error(request, exc):
