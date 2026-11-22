@@ -4,10 +4,8 @@ FROM python:3.12-slim AS builder
 COPY --from=uv /uv /uvx /bin/
 ENV UV_COMPILE_BYTECODE=1 UV_LINK_MODE=copy UV_PROJECT_ENVIRONMENT=/opt/venv
 WORKDIR /build
-COPY pyproject.toml ./
-# First bootstrap resolves dependencies. Commit uv.lock after local verification,
-# then change this to COPY pyproject.toml uv.lock / uv sync --frozen.
-RUN --mount=type=cache,target=/root/.cache/uv uv sync --no-dev --no-install-project
+COPY pyproject.toml uv.lock ./
+RUN --mount=type=cache,target=/root/.cache/uv uv sync --frozen --no-dev --no-install-project
 
 FROM python:3.12-slim AS runtime
 RUN apt-get update && apt-get install -y --no-install-recommends libgomp1 libstdc++6 \

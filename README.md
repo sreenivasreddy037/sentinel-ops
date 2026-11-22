@@ -1,12 +1,14 @@
 # SentinelOps
 
+[![CI](https://github.com/sreenivasreddy037/sentinel-ops/actions/workflows/ci.yml/badge.svg)](https://github.com/sreenivasreddy037/sentinel-ops/actions/workflows/ci.yml)
+
 **Autonomous IT & Cloud Incident Triage & Remediation Agent**
 
 An incident arrives with an error code, a vague symptom and credentials that should never have been pasted into a ticket. SentinelOps redacts sensitive data, retrieves operational evidence, proposes a cited root-cause hypothesis and pauses for a human decision before recording a mutating remediation simulation.
 
 Built as a **Senior Gen AI Engineer portfolio reference**, with FastAPI, LangGraph, Qdrant hybrid retrieval, structured model outputs and durable approval state. Execution is deliberately sandbox simulation: this repository never runs shell commands or modifies cloud infrastructure.
 
-> **Verification status:** implementation and test suites are included. The authoring environment has Python 3.9, no uv/Docker and blocked dependency downloads. Full Python 3.12 tests, Ruff, model evaluation and Docker validation have **not yet run**. See [verification evidence](docs/VERIFICATION.md). Do not represent this as a production-deployed or benchmarked system.
+> **Verified in GitHub Actions:** Ruff clean; **66 tests passed**, 21 optional model/judge cases skipped; end-to-end approval demo passed; Compose validated; API + Qdrant images built and the container smoke test passed. Dependencies are committed in `uv.lock`. See [verification evidence](docs/VERIFICATION.md). Real-model quality scores and production impact remain unmeasured.
 
 ## Business impact
 
@@ -82,11 +84,11 @@ Expect `status: "completed"` with `mode: "simulation"` receipts. Use `"approved"
 
 ```bash
 uv python install 3.12
-uv sync
+uv sync --frozen
 MOCK_LLM=true uv run uvicorn app.main:app --host 127.0.0.1 --port 8000 --workers 1
 ```
 
-The first `uv sync` generates `uv.lock`. Verify and commit it before release; subsequent installations should use `uv sync --frozen`. A lockfile could not be generated in the disconnected authoring environment. The Dockerfile currently resolves from `pyproject.toml`; switch it to frozen lockfile installation once that lock is committed.
+Use `uv sync --frozen` for reproducible installs from the committed lockfile. To deliberately update dependencies, run `uv lock --upgrade`, verify the full suite and commit the new lock. CI and the Docker builder also install from the frozen lock.
 
 ```bash
 uv run ruff check .
@@ -155,13 +157,13 @@ These are original synthetic training scenarios, not claims of real incident res
 
 | Metric | Gate / dataset | Measured result |
 |---|---|---|
-| Exact-code retrieval hit@3 | `0x80070005`, `HTTP 502`, `OOMKilled` | Pending execution |
-| Golden runbook recall@3 | 20 tickets, 15 runbooks | Pending execution |
+| Exact-code retrieval hit@3 | `0x80070005`, `HTTP 502`, `OOMKilled` | 3/3 cases passed (mock retrieval) |
+| Golden runbook recall@3 | 20 tickets, 15 runbooks | 20/20 expected IDs found (mock retrieval) |
 | Faithfulness | ≥0.85 for every online case | Not run; OpenAI judge required |
 | Contextual Recall | ≥0.80 for every online case | Not run; OpenAI judge required |
 | Triage p50 / p95 latency | Real models; report warm/cold cache | TBD |
 | Tokens / cost per incident | Classification + synthesis + retries | TBD |
-| Approval/rejection/restart safety | Deterministic integration suite | Pending execution |
+| Approval/rejection/restart safety | Deterministic integration suite | Passed in GitHub Actions |
 
 Run real retrieval tests without an OpenAI key:
 
@@ -179,7 +181,7 @@ In CI, set the OpenAI repository secret and manually dispatch `run_quality_eval=
 
 ## Production rollout boundary
 
-This is an engineering reference awaiting full verification, not an unattended cloud operator. See [operations and limitations](docs/OPERATIONS.md) for deployment prerequisites, privacy scope, recovery, resource sizing and execution-adapter requirements. There is no real remediation switch hidden behind an environment variable.
+This is a tested engineering reference with simulated execution. Real-model evaluation and organizational production rollout requirements remain open. See [operations and limitations](docs/OPERATIONS.md) for deployment prerequisites, privacy scope, recovery, resource sizing and execution-adapter requirements. There is no real remediation switch hidden behind an environment variable.
 
 ## Portfolio story
 
@@ -206,15 +208,14 @@ docs/               Operations, project guide and verification record
 .github/workflows/  Offline, container and opt-in paid evaluation CI jobs
 ```
 
-## Push to GitHub
-
-Git initialization was blocked in the authoring environment. After verification, `scripts/initialize_git.sh` creates branch `main` and four conventional commits. Review the verification record and commit the generated `uv.lock`, then:
+## Get the source
 
 ```bash
-git remote add origin https://github.com/YOUR_USERNAME/sentinel-ops.git
-git push -u origin main
+git clone https://github.com/sreenivasreddy037/sentinel-ops.git
+cd sentinel-ops
+uv sync --frozen
 ```
 
-If this environment could not create Git metadata, run `bash scripts/initialize_git.sh` on your unrestricted machine after installing the prerequisites. To create a Desktop source copy, run `python3 scripts/export_desktop.py`.
+The public repository includes conventional commits for engineering constraints, core implementation, tests, delivery and documentation. Local Git metadata could not be written in the original sandbox, so the remote history was created through the connected GitHub service. Clone the repository to obtain a normal local checkout with that history.
 
-Create an empty GitHub repository first. Never add `.env`, keys, model caches or incident databases to Git.
+To create a separate Desktop source copy, run `python3 scripts/export_desktop.py`; it excludes credentials and incident data and refuses to overwrite an existing folder. Never add `.env`, keys, model caches or incident databases to Git.

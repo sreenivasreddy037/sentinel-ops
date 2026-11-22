@@ -50,14 +50,14 @@ To demonstrate actual ML retrieval at no model API cost, run `MOCK_LLM=true RETR
 
 ## CV and LinkedIn wording
 
-Before full verification:
+Implemented portfolio description:
 
 “Implemented SentinelOps, a LangGraph incident-triage reference with Qdrant hybrid RAG, structured multi-model routing and human-approved remediation simulations; authored a 20-ticket evaluation harness and container/CI configuration.”
 
-After running the checks, replace the verification status with measured evidence. For example, report the exact golden-set hit rate and judge scores, the model versions and dataset size. Do not claim MTTR reduction, cost savings, production deployment or real remediation without evidence.
+The offline suite, approval demo and container smoke test now pass in GitHub Actions. For real-model claims, add separately measured evidence. For example, report the exact golden-set hit rate and judge scores, the model versions and dataset size. Do not claim MTTR reduction, cost savings, production deployment or real remediation without evidence.
 
 A LinkedIn post can show a short pause/approve/resume screen recording, the architecture and one measured failure case. The interesting engineering story is how you prevent a plausible answer from becoming an unsafe action.
 
 ## What remains before a production release
 
-Run every gate in `docs/VERIFICATION.md`, generate and commit `uv.lock`, measure real retrieval/generation, and add organizational authentication/reviewer roles. Horizontal scale needs shared persistence and distributed locking. Real remediation needs independently secured execution adapters, plan-bound approval and external idempotency. This repository intentionally leaves those as explicit deployment work.
+The offline gates and container smoke test pass, and `uv.lock` is committed. Before production, measure real retrieval/generation and add organizational authentication/reviewer roles. Horizontal scale needs shared persistence and distributed locking. Real remediation needs independently secured execution adapters, plan-bound approval and external idempotency. This repository intentionally leaves those as explicit deployment work.

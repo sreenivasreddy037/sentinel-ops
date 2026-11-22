@@ -12,8 +12,8 @@
 - `docs/`: operational notes and measured verification results.
 
 ## Python 3.12 / uv commands
-- `uv sync` bootstraps dependencies and creates uv.lock; commit it after verification.
-- `uv sync --frozen` is required after the lockfile exists.
+- `uv sync --frozen` installs the committed dependency lock.
+- Update dependencies explicitly with `uv lock --upgrade`, verify, then commit uv.lock.
 - `uv run ruff check .` must pass; use `uv run ruff format .` for formatting.
 - `MOCK_LLM=true uv run pytest -v` runs offline checks; paid model evaluations are opt-in.
 - `MOCK_LLM=true uv run python scripts/demo_run.py` verifies the approval lifecycle.
