@@ -44,7 +44,7 @@ def main():
     (tools / "runtime-manifest.json").write_text(json.dumps(manifest, indent=2) + "\n")
     output = ROOT / "dist/SentinelOps-macos-arm64.tar.gz"
     output.parent.mkdir(exist_ok=True)
-    with tarfile.open(output, "w:gz") as archive:
+    with tarfile.open(output, "w:gz", compresslevel=1) as archive:
         for entry in ENTRIES + [".tools"]:
             source = ROOT / entry
             if source.exists():

@@ -64,13 +64,14 @@ def existing_project_python():
     if not executable.is_file():
         return None
     try:
-        version = subprocess.check_output(
-            [str(executable), "-c", "import sys; print('%d.%d' % sys.version_info[:2])"],
+        information = json.loads(subprocess.check_output(
+            [str(executable), "-c", "import json, sys; print(json.dumps({"
+             "'version': list(sys.version_info[:2]), 'base': sys._base_executable}))"],
             text=True, timeout=10,
-        ).strip()
+        ))
     except (OSError, subprocess.CalledProcessError, subprocess.TimeoutExpired):
         return None
-    return str(executable) if version == "3.12" else None
+    return information["base"] if information["version"] == [3, 12] else None
 
 
 def wait_and_open(url):
@@ -125,14 +126,14 @@ def main(argv=None):
         prefix = [python, str(ROOT / "scripts/portable_runner.py")]
     else:
         uv = uv_binary()
-        env["UV_PYTHON_INSTALL_DIR"] = str(TOOLS / "managed-python")
-        env["UV_PYTHON_BIN_DIR"] = str(TOOLS / "bin")
         existing = existing_project_python()
         if existing:
             # In particular, do not replace an in-use Windows virtualenv interpreter.
             env["UV_PYTHON"] = existing
         else:
             env["UV_PYTHON"] = "3.12"
+            env["UV_PYTHON_INSTALL_DIR"] = str(TOOLS / "managed-python")
+            env["UV_PYTHON_BIN_DIR"] = str(TOOLS / "bin")
             run([uv, "python", "install", "3.12"], env)
         run([uv, "sync", "--frozen"] + ([] if args.verify else ["--no-dev"]), env)
         prefix = [uv, "run", "--frozen", "--no-sync", "python", "-m"]
