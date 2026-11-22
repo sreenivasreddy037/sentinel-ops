@@ -27,11 +27,13 @@ def main():
     tools.mkdir(exist_ok=True)
     # uv's venv executable resolves to the managed, relocatable standalone interpreter.
     interpreter_root = Path(sys.executable).resolve().parents[1]
-    if not (interpreter_root / "lib/python3.12").is_dir():
+    if "cpython-" not in interpreter_root.name or not (interpreter_root / "lib/python3.12").is_dir():
         raise SystemExit("Expected a managed standalone Python 3.12 installation")
     shutil.copytree(interpreter_root, tools / "python-runtime", symlinks=True, ignore=ignore_caches)
     packages = Path(sys.prefix) / "lib/python3.12/site-packages"
     shutil.copytree(packages, tools / "site-packages", symlinks=True, ignore=ignore_caches)
+    (tools / "site-packages/bin").mkdir(exist_ok=True)
+    shutil.copy2(Path(sys.prefix) / "bin/ruff", tools / "site-packages/bin/ruff")
     uv = shutil.which("uv")
     if uv:
         (tools / "bin").mkdir(exist_ok=True)

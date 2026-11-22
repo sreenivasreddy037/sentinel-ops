@@ -8,8 +8,12 @@ on:
         description: Run paid OpenAI RAG evaluation (requires repository secret)
         type: boolean
         default: false
+concurrency:
+  group: sentinel-ci-${{ github.ref }}
+  cancel-in-progress: true
 env:
   DEEPEVAL_TELEMETRY_OPT_OUT: "YES"
+  UV_PYTHON_PREFERENCE: only-managed
 permissions:
   contents: read
 jobs:
