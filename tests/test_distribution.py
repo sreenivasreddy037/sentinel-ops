@@ -80,3 +80,17 @@ def test_prepared_runtime_rejects_wrong_platform(monkeypatch, tmp_path):
     monkeypatch.setattr(start, "TOOLS", tools)
     with pytest.raises(RuntimeError, match="different OS/CPU"):
         start.portable_python()
+
+
+def test_launcher_reuses_an_existing_python_without_replacing_it(monkeypatch, tmp_path):
+    calls = []
+    existing = str(tmp_path / ".venv/python")
+    monkeypatch.setattr(start, "ROOT", tmp_path)
+    monkeypatch.setattr(start, "portable_python", lambda: None)
+    monkeypatch.setattr(start, "uv_binary", lambda: "uv")
+    monkeypatch.setattr(start, "existing_project_python", lambda: existing)
+    monkeypatch.setattr(start, "run", lambda command, env: calls.append((command, env.copy())))
+    start.main(["--install-only"])
+    assert len(calls) == 1
+    assert calls[0][0] == ["uv", "sync", "--frozen", "--no-dev"]
+    assert calls[0][1]["UV_PYTHON"] == existing

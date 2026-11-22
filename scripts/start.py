@@ -59,6 +59,20 @@ def portable_python():
     return str(executable)
 
 
+def existing_project_python():
+    executable = ROOT / (".venv/Scripts/python.exe" if os.name == "nt" else ".venv/bin/python")
+    if not executable.is_file():
+        return None
+    try:
+        version = subprocess.check_output(
+            [str(executable), "-c", "import sys; print('%d.%d' % sys.version_info[:2])"],
+            text=True, timeout=10,
+        ).strip()
+    except (OSError, subprocess.CalledProcessError, subprocess.TimeoutExpired):
+        return None
+    return str(executable) if version == "3.12" else None
+
+
 def wait_and_open(url):
     for _ in range(90):
         try:
@@ -113,7 +127,13 @@ def main(argv=None):
         uv = uv_binary()
         env["UV_PYTHON_INSTALL_DIR"] = str(TOOLS / "managed-python")
         env["UV_PYTHON_BIN_DIR"] = str(TOOLS / "bin")
-        run([uv, "python", "install", "3.12"], env)
+        existing = existing_project_python()
+        if existing:
+            # In particular, do not replace an in-use Windows virtualenv interpreter.
+            env["UV_PYTHON"] = existing
+        else:
+            env["UV_PYTHON"] = "3.12"
+            run([uv, "python", "install", "3.12"], env)
         run([uv, "sync", "--frozen"] + ([] if args.verify else ["--no-dev"]), env)
         prefix = [uv, "run", "--frozen", "--no-sync", "python", "-m"]
     if args.verify:
