@@ -38,14 +38,21 @@ class IncidentService:
         self.connection.execute("PRAGMA journal_mode=WAL")
         self.connection.execute("PRAGMA busy_timeout=5000")
         self.saver = SqliteSaver(self.connection)
+        # LangGraph persists checkpoints on a background thread. A separate SQLite
+        # connection prevents ledger commits from ending its active transaction.
+        self.receipt_connection = sqlite3.connect(settings.checkpoint_path, check_same_thread=False)
+        self.receipt_connection.execute("PRAGMA journal_mode=WAL")
+        self.receipt_connection.execute("PRAGMA busy_timeout=5000")
         self.store = HybridStore(settings)
-        self.workflow = Workflow(settings, self.store, self.saver, SimulationExecutor(self.connection))
+        self.workflow = Workflow(settings, self.store, self.saver,
+                                 SimulationExecutor(self.receipt_connection))
         self.graph = self.workflow.graph
         self.telemetry = Telemetry(settings)
 
     def close(self):
         self.telemetry.close()
         self.store.close()
+        self.receipt_connection.close()
         self.connection.close()
 
     @staticmethod

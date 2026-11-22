@@ -29,3 +29,18 @@ def test_execution_replay_returns_same_receipt_once(tmp_path):
     assert second_connection.execute("SELECT count(*) FROM execution_receipts").fetchone()[0] == 1
     assert second[0]["mode"] == "simulation"
     second_connection.close()
+
+
+def test_ledger_commit_cannot_end_an_active_checkpoint_transaction(client):
+    service = client.app.state.service
+    service.connection.execute("BEGIN")
+    service.connection.execute("SELECT count(*) FROM execution_receipts").fetchone()
+    try:
+        records = service.workflow.executor.execute(
+            "transaction-isolation-regression", [ACTIONS["gateway_diagnose"].command], approved=False
+        )
+        assert len(records) == 1
+        assert service.connection.in_transaction, "Receipt commit ended a checkpoint transaction"
+    finally:
+        service.connection.rollback()
+    assert service.connection.execute("SELECT count(*) FROM execution_receipts").fetchone()[0] == 1

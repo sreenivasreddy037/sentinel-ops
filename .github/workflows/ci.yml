@@ -30,6 +30,15 @@ jobs:
           RUN_LLM_EVALS: "false"
       - run: MOCK_LLM=true uv run python scripts/demo_run.py
       - run: uv run python scripts/native_smoke.py
+      - name: Install CI browser test client
+        run: npm install --prefix "$RUNNER_TEMP/sentinel-browser" --no-package-lock --no-audit --no-fund playwright@1.56.1
+        env:
+          PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD: "1"
+      - name: Exercise the incident console in a real browser
+        run: node scripts/browser_smoke.mjs
+        env:
+          PLAYWRIGHT_PACKAGE_ROOT: ${{ runner.temp }}/sentinel-browser
+          CHROME_BIN: /usr/bin/google-chrome
       - run: docker compose config --quiet
       - uses: actions/upload-artifact@v4
         if: always()
@@ -38,6 +47,7 @@ jobs:
           path: |
             test-results.xml
             uv.lock
+            dist/SentinelOps-console.png
   container-smoke:
     runs-on: ubuntu-latest
     steps:

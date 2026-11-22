@@ -29,7 +29,7 @@ A practical starting point is 2 CPU cores and 4 GB RAM for the API plus Qdrant, 
 
 A pending approval survives an API restart when the SQLite volume remains intact. Inspect `GET /threads/{id}`; resume the same pending thread through `/approve/{id}`. Approving an already completed/denied/escalated thread returns 409. An unsupported command or citation causes a bounded retrieval retry and eventual escalation.
 
-The execution receipt transaction is idempotent for each `(thread_id, action_id)`. This guarantees one stored simulation receipt per action across execution-node replay; it does not claim exactly-once delivery to a future remote infrastructure provider. Receipt writes and graph checkpoints are separate transactions; replay reconciles by receipt key.
+The execution receipt transaction is idempotent for each `(thread_id, action_id)`. This guarantees one stored simulation receipt per action across execution-node replay; it does not claim exactly-once delivery to a future remote infrastructure provider. Receipt writes and graph checkpoints use independent SQLite connections and transactions; replay reconciles by receipt key.
 
 If an exception leaves a thread at a non-approval node, inspect sanitized state and service logs. There is intentionally no public arbitrary replay endpoint. A trusted operator may resume the compiled graph with `invoke(None, config)` under the same service lock after diagnosing the failure. Back up the database first and never modify checkpoint tables manually.
 
