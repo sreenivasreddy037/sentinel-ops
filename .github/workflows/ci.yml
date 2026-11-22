@@ -1,0 +1,76 @@
+name: SentinelOps quality gates
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+    inputs:
+      run_quality_eval:
+        description: Run paid OpenAI RAG evaluation (requires repository secret)
+        type: boolean
+        default: false
+permissions:
+  contents: read
+jobs:
+  offline:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v6
+        with:
+          version: "0.9.11"
+          python-version: "3.12"
+      - run: uv sync
+      - run: uv run ruff check .
+      - run: uv run python scripts/check_repository.py
+      - run: uv run pytest -v --junitxml=test-results.xml
+        env:
+          MOCK_LLM: "true"
+          RUN_LLM_EVALS: "false"
+      - run: MOCK_LLM=true uv run python scripts/demo_run.py
+      - run: docker compose config --quiet
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: offline-results-and-lock
+          path: |
+            test-results.xml
+            uv.lock
+  container-smoke:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: docker compose up --build --detach --wait --wait-timeout 240
+        env:
+          MOCK_LLM: "true"
+      - run: |
+          python3 scripts/container_smoke.py
+      - run: docker compose down --volumes
+        if: always()
+  rag-evaluation:
+    if: github.event_name == 'workflow_dispatch' && inputs.run_quality_eval
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v6
+        with:
+          version: "0.9.11"
+          python-version: "3.12"
+      - run: uv sync
+      - name: Require evaluation credential
+        run: test -n "$OPENAI_API_KEY"
+        env:
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+      - run: uv run pytest -v -m models
+        env:
+          MOCK_LLM: "true"
+          RUN_MODEL_TESTS: "true"
+      - run: uv run pytest -v evals/test_rag_eval.py --junitxml=rag-results.xml
+        env:
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+          RUN_LLM_EVALS: "true"
+          DEEPEVAL_TELEMETRY_OPT_OUT: "YES"
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: rag-evaluation-results
+          path: rag-results.xml

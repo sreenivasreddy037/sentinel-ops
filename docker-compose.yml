@@ -1,0 +1,39 @@
+name: sentinel-ops
+services:
+  sentinel-api:
+    build: .
+    ports:
+      - "127.0.0.1:8000:8000"
+    environment:
+      OPENAI_API_KEY: ${OPENAI_API_KEY:-}
+      MOCK_LLM: ${MOCK_LLM:-true}
+      QDRANT_MODE: server
+      QDRANT_URL: http://qdrant:6333
+      CHECKPOINT_PATH: /srv/sentinel/.sentinel/checkpoints.sqlite
+      API_TOKEN: ${API_TOKEN:-}
+      LANGFUSE_PUBLIC_KEY: ${LANGFUSE_PUBLIC_KEY:-}
+      LANGFUSE_SECRET_KEY: ${LANGFUSE_SECRET_KEY:-}
+      LANGFUSE_HOST: ${LANGFUSE_HOST:-https://cloud.langfuse.com}
+    volumes:
+      - checkpoints:/srv/sentinel/.sentinel
+      - model-cache:/srv/sentinel/.cache
+    depends_on:
+      qdrant:
+        condition: service_started
+    restart: unless-stopped
+    read_only: true
+    tmpfs:
+      - /tmp:size=128m
+    cap_drop: [ALL]
+    security_opt: [no-new-privileges:true]
+    init: true
+  qdrant:
+    image: qdrant/qdrant:v1.15.5
+    volumes:
+      - qdrant-data:/qdrant/storage
+    restart: unless-stopped
+    # No host port: only the API can reach Qdrant on this private Compose network.
+volumes:
+  checkpoints:
+  model-cache:
+  qdrant-data:

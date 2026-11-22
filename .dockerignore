@@ -1,0 +1,12 @@
+.git
+.env
+.env.*
+.venv
+.sentinel
+.cache
+__pycache__
+.pytest_cache
+.ruff_cache
+work
+outputs
+*.sqlite*
