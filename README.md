@@ -8,7 +8,9 @@ An incident arrives with an error code, a vague symptom and credentials that sho
 
 Built as a **Senior Gen AI Engineer portfolio reference**, with FastAPI, LangGraph, Qdrant hybrid retrieval, structured model outputs and durable approval state. Execution is deliberately sandbox simulation: this repository never runs shell commands or modifies cloud infrastructure.
 
-> **Verified in GitHub Actions:** Ruff clean; **66 tests passed**, 21 optional model/judge cases skipped; end-to-end approval demo passed; Compose validated; API + Qdrant images built and the container smoke test passed. Dependencies are committed in `uv.lock`. See [verification evidence](docs/VERIFICATION.md). Real-model quality scores and production impact remain unmeasured.
+> **Verified in GitHub Actions:** Ruff clean; **74 offline tests passed**, 21 optional cases skipped in that suite; the separate real FastEmbed/BM25/FlashRank test also passed; browser approval/rejection/escalation, native startup on Windows/macOS/Linux, and the relocated Mac runtime all passed. Compose validated; API + Qdrant images built and the container smoke test passed. Dependencies are committed in `uv.lock`. See [verification evidence](docs/VERIFICATION.md). Paid OpenAI judge scores and production impact remain unmeasured.
+
+![SentinelOps incident console after an approved simulation](docs/images/console.png)
 
 ## Business impact
 
@@ -164,6 +166,7 @@ These are original synthetic training scenarios, not claims of real incident res
 | Metric | Gate / dataset | Measured result |
 |---|---|---|
 | Exact-code retrieval hit@3 | `0x80070005`, `HTTP 502`, `OOMKilled` | 3/3 cases passed (mock retrieval) |
+| Real hybrid retrieval hit@3 | FastEmbed + BM25 + FlashRank; three exact-code queries | 3/3 passed in the dedicated model test |
 | Golden runbook recall@3 | 20 tickets, 15 runbooks | 20/20 expected IDs found (mock retrieval) |
 | Faithfulness | ≥0.85 for every online case | Not run; OpenAI judge required |
 | Contextual Recall | ≥0.80 for every online case | Not run; OpenAI judge required |
@@ -187,7 +190,7 @@ In CI, set the OpenAI repository secret and manually dispatch `run_quality_eval=
 
 ## Production rollout boundary
 
-This is a tested engineering reference with simulated execution. Real-model evaluation and organizational production rollout requirements remain open. See [operations and limitations](docs/OPERATIONS.md) for deployment prerequisites, privacy scope, recovery, resource sizing and execution-adapter requirements. There is no real remediation switch hidden behind an environment variable.
+This is a tested engineering reference with simulated execution. Paid OpenAI evaluation and organizational production rollout requirements remain open. See [operations and limitations](docs/OPERATIONS.md) for deployment prerequisites, privacy scope, recovery, resource sizing and execution-adapter requirements. There is no real remediation switch hidden behind an environment variable.
 
 ## Portfolio story
 

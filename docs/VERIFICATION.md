@@ -1,50 +1,50 @@
 # Verification record — November 22, 2026
 
-## Result
+## Downloadable project acceptance
 
-**Offline acceptance verified in GitHub Actions.** [Run #2](https://github.com/sreenivasreddy037/sentinel-ops/actions/runs/45080430070), commit `2cf0be9650e584ab307ca76b78c8af511714b40a`, passed both the offline and container-smoke jobs. The public source and conventional commit history are published at [sreenivasreddy037/sentinel-ops](https://github.com/sreenivasreddy037/sentinel-ops).
+[GitHub Actions run #8](https://github.com/sreenivasreddy037/sentinel-ops/actions/runs/45083283534), code commit `ba271bfe9fb455014daeca808c3569985052ea39`, completed successfully. All five non-paid jobs passed. The optional paid OpenAI/DeepEval job was deliberately skipped because no API credential was supplied.
 
 | Check | Measured result |
 |---|---|
-| Dependency resolution/install | uv 0.9.11 on CPython 3.12.12; success |
-| `uv run ruff check .` | All checks passed |
-| Repository structure and interrupt boundary | Passed; 26 Python files, 15 runbooks, 20 golden tickets |
-| `MOCK_LLM=true uv run pytest -v` | **66 passed, 21 skipped**, 2 dependency deprecation warnings; 5.23 seconds |
-| Golden-ticket runbook retrieval | 20/20 cases passed with deterministic mock vectors and real local Qdrant fusion |
-| Exact-code retrieval | All three tests passed: 0x80070005, HTTP 502, OOMKilled |
-| Approval / rejection / restart / replay tests | Passed within the offline suite |
-| End-to-end CLI demo | Passed: ingestion, redaction, cited RCA, interrupt pause, approval and simulation receipts |
-| `docker compose config --quiet` | Passed |
-| Multi-stage API image and Qdrant deployment | Built and started successfully in GitHub Actions |
-| Container HTTP smoke | Passed against the real API + Qdrant server, including approval pause/resume |
-| Real FastEmbed / FlashRank test | Not run; one opt-in model-download case skipped |
-| Real OpenAI generation / DeepEval | Not run; 20 credential-dependent cases skipped |
+| Frozen dependencies | uv 0.9.11; managed CPython 3.12.12 |
+| Ruff | All checks passed |
+| Offline Python suite | **74 passed, 21 optional cases skipped**, 5.58 seconds on the Linux runner |
+| Real retrieval/reranking | FastEmbed dense + BM25 + FlashRank: all three exact-code queries passed |
+| Golden retrieval contracts | 20/20 mock-vector cases found their expected runbook IDs |
+| First-start behavior | Automatic indexing, `/ready`, dashboard assets and startup retry tests passed |
+| Browser workflow | Analyze → redacted ticket → approval → two simulation receipts; rejection and escalation also passed, with no browser errors |
+| Native Linux launch | Actual localhost server, automatic indexing and approval lifecycle passed |
+| Native Windows launch | Distribution tests and actual first-start HTTP workflow passed |
+| Native Apple silicon Mac launch | Distribution tests and actual first-start HTTP workflow passed |
+| Prepared Mac bundle | Built, extracted to a different directory, then passed lint, full tests, CLI demo and native HTTP smoke |
+| Docker distribution | Multi-stage image built; API + Qdrant started; dashboard/readiness and approval HTTP smoke passed |
+| Compose syntax | Passed |
+| Paid generation/judge scores | 20 cases not run; user API key is required |
 
-Two pytest warnings came from the installed Sentry SDK through a development dependency. They were deprecation warnings, not failing tests. Offline mock scores are not semantic model benchmarks, production MTTR measurements or proof of real infrastructure recovery.
+The full offline suite skips one model-download case and 20 paid judge cases. The separate `retrieval-models` job runs the real model-download case, so retrieval is independently verified. Mock-vector golden-set results are not presented as semantic quality scores.
 
-## Dependency lock and remote history
+## Prepared Mac download
 
-The CI-generated `uv.lock` was retrieved from the run artifact and committed. Local development, CI and Docker now use frozen installation. The follow-up workflow in [Actions](https://github.com/sreenivasreddy037/sentinel-ops/actions) verifies this frozen-install revision; the table above cites the completed baseline run rather than inventing results for a run in progress.
+The successful run publishes a `SentinelOps-macos-arm64` artifact containing source, a relocatable managed Python runtime, uv and the locked dependencies. It is tested after moving to a new extraction directory. Artifacts are retained for 30 days and can require a GitHub sign-in; the public source ZIP and native launcher are the permanent distribution path.
 
-The first workflow run built and smoke-tested the container stack but found one Ruff import-spacing issue. That issue was corrected in a conventional test commit, and run #2 passed. The repository history includes separate docs, feature, test and CI commits, with subsequent verification fixes retained for review.
+Source users need Python 3.9+ with pip and internet for the first bootstrap. The launcher installs Python 3.12 and project dependencies locally. Docker is optional. See `docs/GETTING_STARTED.md`.
 
-## Local environment limits
+## Reliability fixes verified during this work
 
-The original authoring sandbox still has Python 3.9.6, no uv or Docker, and blocked dependency downloads. Writing local `.git` metadata and `~/Desktop/SentinelOps` was rejected with `Operation not permitted`. Those restrictions did not prevent publishing through the connected GitHub service or testing on GitHub's hosted runners.
+Execution receipts now use a separate SQLite connection from background LangGraph checkpoints. A regression test proves a receipt commit cannot end an active checkpoint transaction. The full workflow suite passed after this fix.
 
-To obtain a normal local Git checkout, clone the published repository outside this sandbox. To create a source-only Desktop copy, run `python3 scripts/export_desktop.py` from an unrestricted local terminal. That exporter excludes credentials/runtime incident data and refuses to overwrite an existing folder.
+The launcher retains the base interpreter of an existing Python 3.12 environment rather than replacing an active Windows virtualenv. The prepared Mac bundle includes its binary tools, uses managed standalone Python rather than a machine-specific framework installation, and excludes bundled dependencies from source linting. Both native platforms passed after these corrections.
 
-## Additional local checks that passed
+One Docker build encountered an external PyPI download timeout. Download timeouts/retries were adjusted and the final complete Docker build and smoke test passed. No failed job is represented as a passing result.
 
-- Dependency-free AST parsing and bytecode compilation of all Python sources.
-- `interrupt()` is outside every protected `try` body.
-- 15 unique runbooks with seven intact header sections and at least 350 words each.
-- 20 golden tickets with valid runbook IDs and remediation ground truth.
-- 15 regex redaction examples, exact-code preservation, nonreversible metadata and repeat-scrub idempotence, including complete IPv4-mapped IPv6 redaction.
-- Bash syntax for verification and Git initialization scripts; source ZIP integrity.
+## Local authoring environment
 
-## Remaining quality and rollout work
+The managed session blocks external shell downloads, localhost socket binding, local `.git` writes and Desktop writes. It originally provided only Python 3.9.6. The verified Apple silicon runtime has since been retrieved and installed under this project's `.tools` directory; source and runtime files remain separated and `.tools` is excluded from Git.
 
-Run real retrieval with `RUN_MODEL_TESTS=true MOCK_LLM=true uv run pytest -v -m models`. Run the real generation/judge cases with an OpenAI key and `RUN_LLM_EVALS=true`; record actual scores and model versions. The provided CI dispatch supports those checks, but they have not been represented as already passing.
+Local checks after installing that runtime also passed: Python 3.12.12 and uv 0.9.11 version checks, Ruff, **74 Python tests with 21 optional skips**, and the full CLI approval demo. For the local test invocation, third-party pytest plugin autoload was disabled because an unrelated rerun plugin tries to bind a localhost socket; the application tests themselves ran unchanged. The GitHub runner used the standard test invocation and passed all checks.
 
-Production exposure still needs organizational authentication/reviewer roles, per-thread authorization, retention controls and a reviewed execution adapter. Remediation remains sandbox simulation. See `docs/OPERATIONS.md` for the deployment boundary.
+A localhost server must be started in the user's normal terminal rather than inside this sandbox. The ready launcher is `bash start.sh` (or `Start-SentinelOps.command` on Mac). No request to weaken sandbox, browser or OS protections is part of the setup.
+
+## Production boundary
+
+This is a runnable, tested portfolio application with simulation-only remediation. Real OpenAI mode needs the user's own key; paid quality scores have not been fabricated. Organizational SSO/reviewer roles, per-thread authorization, production retention controls and real infrastructure execution adapters remain separate rollout work. See `docs/OPERATIONS.md`.
