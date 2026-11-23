@@ -1,63 +1,75 @@
-# Understanding and presenting SentinelOps
+# SentinelOps technical guide
 
-## What you built
+## System overview
 
-SentinelOps is an AI assistant for the first stage of IT incident response. It converts a messy ticket into a structured, cited investigation plan. It then waits for an operator before recording simulated corrective actions. Think of it as a careful on-call triage partner, with saved workflow state and an explicit human handoff.
+SentinelOps converts incident tickets into structured investigation and remediation plans. Each report includes a likely root cause, confidence score, supporting runbook IDs and a fixed action plan. Mutating plans pause for an operator decision. Approved actions produce durable simulation receipts; rejected plans execute nothing.
 
-Example: a ticket says “HTTP 502 Bad Gateway after deployment” and contains an email, IP address and password. SentinelOps removes the sensitive values, classifies the incident, looks up the gateway runbook, proposes a likely upstream failure and presents fixed diagnostic/remediation commands. Nothing mutating is recorded until a reviewer approves. A rejection ends the workflow without execution.
+For example, an HTTP 502 ticket passes through redaction, classification and retrieval before the agent proposes an upstream-health investigation. The operator can inspect the evidence and plan in the incident console, then approve or reject it. The same pending approval can be resumed after an application restart.
 
-## Follow one ticket through the code
+## Incident lifecycle
 
-1. `app/main.py`: validates the HTTP request and creates a UUID thread. A service lock serializes work in the single-worker SQLite deployment.
-2. `pii_scrubber.py`: removes covered secrets before graph input is saved. The first graph node checks it again. Originals are not stored in a reversible map.
-3. `workflow.py`: a cheaper model selects severity, domain and focused retrieval queries. Mock mode uses deterministic rules.
-4. `hybrid_store.py`: searches dense and sparse vectors in Qdrant, fuses eight candidates and reranks to three. Real mode uses FastEmbed/BM25/FlashRank; mock mode explicitly substitutes deterministic test vectors and ranking.
-5. `workflow.py`: a reasoning model returns an `IncidentReport` through a Pydantic schema. Code verifies citations and command provenance, regardless of what the model claims.
-6. If confidence is below 0.75 or citations are absent/invalid, the workflow rewrites the query at most twice. Continued uncertainty escalates with no executable plan.
-7. `human_approval_gate`: LangGraph pauses using `interrupt()`. SQLite retains the thread. Approve or reject through a second API request, including after a restart.
-8. `execute_remediation`: approved changes become durable simulation receipts. A deterministic idempotency key stops replay from recording the same action twice.
+1. `app/main.py` validates the request and assigns a UUID thread. A service lock serializes graph, approval and indexing operations in the single-worker deployment.
+2. `app/guardrails/pii_scrubber.py` removes covered credentials and identifiers before the first checkpoint. The graph checks the sanitized input again; originals are not retained in a reversible map.
+3. `app/graph/workflow.py` routes classification and query generation to the fast model. Deterministic demo mode uses explicit test rules instead.
+4. `app/retrieval/hybrid_store.py` searches dense and sparse Qdrant vectors, fuses eight candidates and reranks to three. Real retrieval uses FastEmbed, BM25 and FlashRank.
+5. The synthesis model returns a Pydantic-validated `IncidentReport`. Code checks that citations come from retrieved evidence and commands belong to the cited runbooks' action registry.
+6. Confidence below 0.75 or missing/invalid citations triggers up to two query rewrites. Continued uncertainty ends in escalation with no executable plan.
+7. `human_approval_gate` pauses through LangGraph `interrupt()`. SQLite retains the workflow until `/approve/{thread_id}` supplies an explicit approval or rejection.
+8. `execute_remediation` records approved simulation actions. A deterministic thread/action key prevents duplicate receipts when execution is replayed.
 
-## Why this is more than a chatbot
+## Design decisions
 
-A chatbot usually responds with text. This system has explicit state transitions, strict response contracts, evidence retrieval, bounded retries, stored checkpoints, approval/rejection rules, action provenance checks and an execution receipt ledger. Tests cover the handoff and failure paths; an evaluation harness measures the generated answer against expected evidence.
+### Retrieval preserves operational identifiers
 
-The retrieval knowledge base contains 15 synthetic runbooks. The golden set includes 20 tickets with expected runbook IDs and remediation strings. These provide a small reproducible starting point, not evidence of general enterprise incident coverage.
+Semantic search handles paraphrased symptoms, while BM25 captures literal identifiers such as `0x80070005`, `OOMKilled` and `HTTP 502`. Reciprocal rank fusion combines those signals, and a cross-encoder reranks the candidates. Markdown header chunks preserve complete diagnostic procedures and include runbook metadata and allowed actions.
 
-## Skills you can demonstrate
+### Model routing separates tasks
 
-| Area | Concrete evidence |
+Classification and query rewriting use `gpt-4o-mini`; report synthesis uses `gpt-4o`. This separates short classification work from evidence-heavy generation. Cost savings depend on measured token usage, retry rates and model pricing.
+
+### Approval is part of execution control
+
+The model cannot waive approval for a mutating action. The action registry determines which commands require review. Approval and execution occupy separate graph nodes because LangGraph replays the interrupting node on resume. No infrastructure effects occur in that replayed node.
+
+### Persistence supports recovery
+
+SQLite checkpoints retain thread state and pending approvals. Execution receipts use an independent SQLite connection so a receipt commit cannot end a background checkpoint transaction. Idempotency reconciles execution-node replay with already-recorded receipts. The default deployment uses one worker; horizontal scaling requires shared persistence and distributed approval claims.
+
+## Components
+
+| Component | Responsibility |
 |---|---|
-| Agent engineering | LangGraph graph, conditional retry edges, durable interrupts and resume |
-| RAG | Header-aware chunking, dense + BM25 named vectors, RRF and cross-encoder reranking |
-| Model engineering | Separate classification and synthesis models; validated structured outputs |
-| Safety | Pre-checkpoint redaction, fixed registry, mandatory approval for mutations, escalation |
-| Backend engineering | Typed FastAPI endpoints, strict inputs, conflicts, optional bearer authentication |
-| Reliability | SQLite checkpoints, persisted receipts, replay idempotency and restart tests |
-| Quality | Offline contracts, 20 golden tickets, opt-in DeepEval thresholds and CI configuration |
-| Delivery | uv project, non-root multi-stage image, API + Qdrant Compose stack |
+| FastAPI | Validated HTTP contracts, incident console, authentication option and readiness |
+| LangGraph | Stateful transitions, bounded correction loop, interruption and resume |
+| Qdrant | Named dense/sparse vectors and fused retrieval |
+| FastEmbed / FlashRank | Local embeddings, BM25 vectors and reranking |
+| Pydantic | Strict ticket, report, approval and execution contracts |
+| SQLite | Checkpoints and durable execution receipts |
+| Langfuse | Optional transition metadata without incident payloads |
+| Docker / uv | Container delivery and locked dependency installation |
 
-## A short interview explanation
+## Execution modes
 
-“I built SentinelOps to explore how an AI incident-response assistant can make useful recommendations while keeping humans in control. It retrieves runbooks using both semantic search and exact keyword matching, then produces a structured, cited hypothesis. LangGraph saves the workflow and pauses before a mutating action. Approval resumes it in a separate execution node. Execution is deliberately simulated with idempotent receipts. I also built offline safety tests and a 20-ticket evaluation harness so I can measure changes instead of relying on a convincing demo.”
+The default launcher uses deterministic generation and test retrieval vectors for a free, reproducible demo. Qdrant storage, workflow persistence, approval and execution-receipt behavior remain active.
 
-If asked what is autonomous, say that classification, retrieval, query rewriting and report generation are automated. Mutating remediation requires a human. Do not describe it as an agent that independently repairs real infrastructure.
+`MOCK_LLM=true RETRIEVAL_BACKEND=fastembed` enables real local embedding and reranking models with deterministic generation. `MOCK_LLM=false` enables the configured OpenAI models and requires an API key. All modes use the simulation executor; there is no switch that enables arbitrary shell or cloud mutations.
 
-## Demo sequence
+The knowledge base includes 15 synthetic runbooks and a 20-ticket golden set. Each golden case specifies expected runbook IDs and remediation ground truth.
 
-Run `MOCK_LLM=true uv run python scripts/demo_run.py`. Explain the redacted ticket, retrieved citation, proposed commands, empty execution log while paused, and receipt records after approval. Repeat with `approved=false` through the API. Then discuss why the execution node is separate: LangGraph replays the approval node on resume.
+## Run and inspect a workflow
 
-To demonstrate actual ML retrieval at no model API cost, run `MOCK_LLM=true RETRIEVAL_BACKEND=fastembed uv run python scripts/demo_run.py`. This downloads local models and requires connectivity. To demonstrate actual generation, use an OpenAI key and `MOCK_LLM=false`; API charges may apply.
+Start the incident console with `bash start.sh` on Mac/Linux or `start.cmd` on Windows. Select an example, analyze the incident, inspect the redacted ticket and cited report, then approve or reject the proposed simulation.
 
-## CV and LinkedIn wording
+For terminal output, run:
 
-Implemented portfolio description:
+```bash
+MOCK_LLM=true uv run python scripts/demo_run.py
+```
 
-“Implemented SentinelOps, a LangGraph incident-triage reference with Qdrant hybrid RAG, structured multi-model routing and human-approved remediation simulations; authored a 20-ticket evaluation harness and container/CI configuration.”
+The demo prints ingestion results, redacted input, the RCA, an empty execution log at the approval pause and simulation receipts after resume. The API exposes sanitized checkpoint state at `/threads/{thread_id}`.
 
-The 74-test offline suite, real retrieval test, browser workflow, native Mac/Windows startup and container smoke test pass in GitHub Actions. For real-model claims, add separately measured evidence. For example, report the exact golden-set hit rate and judge scores, the model versions and dataset size. Do not claim MTTR reduction, cost savings, production deployment or real remediation without evidence.
+## Validation and deployment
 
-A LinkedIn post can show a short pause/approve/resume screen recording, the architecture and one measured failure case. The interesting engineering story is how you prevent a plausible answer from becoming an unsafe action.
+The offline suite covers redaction, exact-code retrieval, grounding retries, invalid plans, approval/rejection, restart/resume, transaction isolation and replay idempotency. Separate checks exercise real retrieval, the browser console, native startup and the Docker stack. Paid DeepEval metrics are opt-in and have not yet been measured. Detailed results are in [VERIFICATION.md](VERIFICATION.md).
 
-## What remains before a production release
-
-The offline gates and container smoke test pass, and `uv.lock` is committed. Before production, measure real retrieval/generation and add organizational authentication/reviewer roles. Horizontal scale needs shared persistence and distributed locking. Real remediation needs independently secured execution adapters, plan-bound approval and external idempotency. This repository intentionally leaves those as explicit deployment work.
+Production integration requires organization-specific authentication, reviewer roles, per-thread authorization, retention controls and reviewed execution adapters. External execution needs scoped credentials, plan-bound approval, provider-side idempotency and recovery verification. Deployment details are in [OPERATIONS.md](OPERATIONS.md).

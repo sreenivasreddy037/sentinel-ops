@@ -1,6 +1,6 @@
 # Run SentinelOps
 
-SentinelOps is a runnable portfolio application. The free demo includes the browser console, a real local Qdrant database, saved incident state, evidence lookup and the complete approval/rejection lifecycle. Remediation is simulated. Real OpenAI generation is a separate optional mode that needs your own API key.
+SentinelOps is an incident-triage and remediation-planning application. The free demo includes the browser console, a real local Qdrant database, saved incident state, evidence lookup and the complete approval/rejection lifecycle. Remediation is simulated. Real OpenAI generation is a separate optional mode that needs your own API key.
 
 ## Download
 
@@ -91,7 +91,7 @@ Langfuse is optional. No account is needed to run the application. To use tracin
 | Dashboard says not ready | Wait for startup to finish and refresh. `/ready` returns 200 only after indexing; check terminal output if it remains unavailable. |
 | Server requires an access token | Expand the token field in the console and enter your configured `API_TOKEN`; it is not saved in browser storage. |
 | Model or API error in real mode | Check the key, model access and network. Use `--mode demo` to verify the local application independently. |
-| Cannot start from a managed agent sandbox | Run the launcher in your own normal terminal. Some sandboxes block downloads and localhost listeners. |
+| Restricted environment blocks local startup | Run the launcher in a terminal that permits dependency downloads and localhost listeners. |
 
 ## What is ready and what is optional
 

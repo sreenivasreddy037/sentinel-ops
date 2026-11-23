@@ -29,22 +29,20 @@ The successful run publishes a `SentinelOps-macos-arm64` artifact containing sou
 
 Source users need Python 3.9+ with pip and internet for the first bootstrap. The launcher installs Python 3.12 and project dependencies locally. Docker is optional. See `docs/GETTING_STARTED.md`.
 
-## Reliability fixes verified during this work
+## Reliability checks
 
 Execution receipts now use a separate SQLite connection from background LangGraph checkpoints. A regression test proves a receipt commit cannot end an active checkpoint transaction. The full workflow suite passed after this fix.
 
 The launcher retains the base interpreter of an existing Python 3.12 environment rather than replacing an active Windows virtualenv. The prepared Mac bundle includes its binary tools, uses managed standalone Python rather than a machine-specific framework installation, and excludes bundled dependencies from source linting. Both native platforms passed after these corrections.
 
-One Docker build encountered an external PyPI download timeout. Download timeouts/retries were adjusted and the final complete Docker build and smoke test passed. No failed job is represented as a passing result.
+One Docker build encountered an external PyPI download timeout. Download timeouts/retries were adjusted and the final complete Docker build and smoke test passed. The final successful run is the verification baseline linked above.
 
-## Local authoring environment
+## Additional local validation
 
-The managed session blocks external shell downloads, localhost socket binding, local `.git` writes and Desktop writes. It originally provided only Python 3.9.6. The verified Apple silicon runtime has since been retrieved and installed under this project's `.tools` directory; source and runtime files remain separated and `.tools` is excluded from Git.
+The prepared Apple silicon runtime was also checked locally: Python 3.12.12 and uv 0.9.11 version checks, Ruff, **74 Python tests with 21 optional skips**, and the full CLI approval demo passed. Unrelated pytest plugin autoload was disabled for this local invocation; CI used the standard test invocation.
 
-Local checks after installing that runtime also passed: Python 3.12.12 and uv 0.9.11 version checks, Ruff, **74 Python tests with 21 optional skips**, and the full CLI approval demo. For the local test invocation, third-party pytest plugin autoload was disabled because an unrelated rerun plugin tries to bind a localhost socket; the application tests themselves ran unchanged. The GitHub runner used the standard test invocation and passed all checks.
-
-A localhost server must be started in the user's normal terminal rather than inside this sandbox. The ready launcher is `bash start.sh` (or `Start-SentinelOps.command` on Mac). No request to weaken sandbox, browser or OS protections is part of the setup.
+The native launcher is `bash start.sh`, `start.cmd` on Windows, or `Start-SentinelOps.command` on Mac. First-time setup and environment requirements are documented in `docs/GETTING_STARTED.md`.
 
 ## Production boundary
 
-This is a runnable, tested portfolio application with simulation-only remediation. Real OpenAI mode needs the user's own key; paid quality scores have not been fabricated. Organizational SSO/reviewer roles, per-thread authorization, production retention controls and real infrastructure execution adapters remain separate rollout work. See `docs/OPERATIONS.md`.
+The current release provides incident triage, reviewed plans and simulation-only remediation. Real OpenAI mode requires an API key; paid generation and judge evaluations have not yet run. Organizational SSO/reviewer roles, per-thread authorization, production retention controls and real infrastructure execution adapters remain separate rollout work. See `docs/OPERATIONS.md`.

@@ -4,9 +4,9 @@
 
 **Autonomous IT & Cloud Incident Triage & Remediation Agent**
 
-An incident arrives with an error code, a vague symptom and credentials that should never have been pasted into a ticket. SentinelOps redacts sensitive data, retrieves operational evidence, proposes a cited root-cause hypothesis and pauses for a human decision before recording a mutating remediation simulation.
+SentinelOps turns unstructured IT and cloud incident tickets into evidence-backed diagnoses and reviewed remediation plans. It redacts sensitive data, retrieves relevant runbooks, produces a cited root-cause hypothesis, and pauses for an operator before recording a mutating action.
 
-Built as a **Senior Gen AI Engineer portfolio reference**, with FastAPI, LangGraph, Qdrant hybrid retrieval, structured model outputs and durable approval state. Execution is deliberately sandbox simulation: this repository never runs shell commands or modifies cloud infrastructure.
+Built with FastAPI, LangGraph and Qdrant, SentinelOps combines hybrid retrieval, structured multi-model routing and durable approval state. The current executor records simulated actions; it does not run remediation commands or modify cloud infrastructure.
 
 > **Verified in GitHub Actions:** Ruff clean; **74 offline tests passed**, 21 optional cases skipped in that suite; the separate real FastEmbed/BM25/FlashRank test also passed; browser approval/rejection/escalation, native startup on Windows/macOS/Linux, and the relocated Mac runtime all passed. Compose validated; API + Qdrant images built and the container smoke test passed. Dependencies are committed in `uv.lock`. See [verification evidence](docs/VERIFICATION.md). Paid OpenAI judge scores and production impact remain unmeasured.
 
@@ -20,7 +20,7 @@ Built as a **Senior Gen AI Engineer portfolio reference**, with FastAPI, LangGra
 - Keep pasted credentials out of model requests, saved checkpoints and telemetry.
 - Measure retrieval and generation changes through reproducible offline tests and opt-in quality gates.
 
-Actual MTTR reduction, inference savings and recovery outcomes need measurement in a real operational environment. No improvement percentage is invented here.
+Operational MTTR, inference cost savings and recovery outcomes have not yet been benchmarked in a production environment.
 
 ## Architecture
 
@@ -133,7 +133,7 @@ Optional Langfuse requires both `LANGFUSE_PUBLIC_KEY` and `LANGFUSE_SECRET_KEY`;
 
 `IncidentReport` contains `root_cause`, `confidence_score` (0–1), `cited_runbook_ids`, `proposed_commands`, and `requires_approval`. Inputs reject unknown fields and string-valued approval booleans.
 
-For local tooling, set `API_TOKEN` to require `Authorization: Bearer <token>` on all incident/data endpoints. Health remains public. The reference Compose binding is loopback only. Reviewer role separation and user-level authorization belong at the production identity gateway; the demo token alone does not establish reviewer identity.
+For local tooling, set `API_TOKEN` to require `Authorization: Bearer <token>` on all incident/data endpoints. Health remains public. The default Compose binding is loopback only. Reviewer role separation and user-level authorization belong at the production identity gateway; the demo token alone does not establish reviewer identity.
 
 ## Architectural trade-offs
 
@@ -159,7 +159,7 @@ For local tooling, set `API_TOKEN` to require `Authorization: Bearer <token>` on
 | Kubernetes | CrashLoopBackOff; ImagePullBackOff / ErrImagePull |
 | Identity / Windows | AD event 4740 / lockout; 0x80070005; BitLocker recovery; VPN RADIUS timeout |
 
-These are original synthetic training scenarios, not claims of real incident response experience.
+The runbooks and post-mortems are synthetic fixtures for reproducible retrieval, diagnosis and workflow validation.
 
 ## Benchmarks and evaluation
 
@@ -190,13 +190,13 @@ In CI, set the OpenAI repository secret and manually dispatch `run_quality_eval=
 
 ## Production rollout boundary
 
-This is a tested engineering reference with simulated execution. Paid OpenAI evaluation and organizational production rollout requirements remain open. See [operations and limitations](docs/OPERATIONS.md) for deployment prerequisites, privacy scope, recovery, resource sizing and execution-adapter requirements. There is no real remediation switch hidden behind an environment variable.
+The current release uses simulated execution. Connecting real infrastructure requires reviewed execution adapters, organization-specific authorization and operational controls. Paid OpenAI evaluation and production impact measurements remain pending. See [operations and deployment](docs/OPERATIONS.md) for authentication, privacy, recovery, resource sizing and execution requirements.
 
-## Portfolio story
+## Why I built SentinelOps
 
-> Built SentinelOps, a checkpointed incident-triage reference using LangGraph, Qdrant dense/BM25 retrieval, cross-encoder reranking and structured multi-model routing, with approval-gated, idempotent remediation simulations and a 20-ticket evaluation harness.
+I wanted an incident-response workflow that could turn incomplete tickets into evidence-backed plans while keeping operators in control of changes. SentinelOps separates diagnosis, retrieval, approval and execution into checkpointed stages so each decision can be inspected and resumed.
 
-Add measured quality, latency and cost results only after running the corresponding suites. [Project walkthrough and interview explanation](docs/PROJECT_GUIDE.md) explains the design, demo and honest CV/LinkedIn positioning.
+The design focuses on three priorities: preserve exact operational error codes during retrieval, ground proposed actions in runbook evidence, and make human approval an enforceable execution boundary. The [technical project guide](docs/PROJECT_GUIDE.md) explains the implementation and design decisions.
 
 ## Technical references
 
@@ -225,8 +225,6 @@ cd sentinel-ops
 uv sync --frozen
 ```
 
-The public repository includes conventional commits for engineering constraints, core implementation, tests, delivery and documentation. Local Git metadata could not be written in the original sandbox, so the remote history was created through the connected GitHub service. Clone the repository to obtain a normal local checkout with that history.
-
-For a normal first start, use the launcher described above; all per-project runtime installations stay out of Git.
+Use the native launcher for first-time setup, or install from `uv.lock` for development. Runtime environments, credentials and incident data stay out of Git.
 
 To create a separate Desktop source copy, run `python3 scripts/export_desktop.py`; it excludes credentials and incident data and refuses to overwrite an existing folder. Never add `.env`, keys, model caches or incident databases to Git.

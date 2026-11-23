@@ -1,6 +1,6 @@
 """Copy reviewed project source to a new Desktop folder without runtime secrets.
 
-Run locally if the agent sandbox cannot write to Desktop. Never overwrites a folder.
+Exports source files only and never overwrites an existing folder.
 """
 
 import shutil

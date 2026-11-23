@@ -20,7 +20,7 @@ class Action:
     mutating: bool
 
 
-# Commands are portfolio examples. Targets are fixed sandbox resources.
+# Commands are fixed simulation examples. Targets are sandbox resources.
 ACTION_ROWS = [
     ("RB-LNX-001", "inode", "df -i /var", "logrotate -f /etc/logrotate.d/sentinel-demo"),
     ("RB-LNX-002", "systemd", "systemctl status sentinel-demo", "systemctl restart sentinel-demo"),
