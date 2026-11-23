@@ -4,7 +4,7 @@ FROM python:3.12-slim AS builder
 COPY --from=uv /uv /uvx /bin/
 ENV UV_COMPILE_BYTECODE=1 UV_LINK_MODE=copy UV_PROJECT_ENVIRONMENT=/opt/venv UV_HTTP_TIMEOUT=120 UV_HTTP_RETRIES=5
 WORKDIR /build
-COPY pyproject.toml uv.lock ./
+COPY pyproject.toml uv.lock LICENSE ./
 RUN --mount=type=cache,target=/root/.cache/uv uv sync --frozen --no-dev --no-install-project
 
 FROM python:3.12-slim AS runtime
@@ -15,6 +15,7 @@ WORKDIR /srv/sentinel
 COPY --from=builder /opt/venv /opt/venv
 COPY --chown=10001:10001 app ./app
 COPY --chown=10001:10001 data ./data
+COPY --chown=10001:10001 LICENSE ./LICENSE
 RUN mkdir -p /srv/sentinel/.sentinel /srv/sentinel/.cache && chown -R 10001:10001 /srv/sentinel
 ENV PATH=/opt/venv/bin:$PATH PYTHONUNBUFFERED=1 PYTHONDONTWRITEBYTECODE=1 \
     CHECKPOINT_PATH=/srv/sentinel/.sentinel/checkpoints.sqlite MODEL_CACHE=/srv/sentinel/.cache/models

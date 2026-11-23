@@ -8,7 +8,7 @@ from pathlib import Path
 
 SOURCE = Path(__file__).resolve().parents[1]
 ENTRIES = [
-    "AGENTS.md", "README.md", "pyproject.toml", "uv.lock", ".python-version", ".env.example",
+    "AGENTS.md", "README.md", "LICENSE", "pyproject.toml", "uv.lock", ".python-version", ".env.example",
     ".gitignore", ".dockerignore", "Dockerfile", "docker-compose.yml", ".github", "app", "data",
     "scripts", "tests", "evals", "docs", "start.sh", "start.cmd", "Start-SentinelOps.command",
 ]

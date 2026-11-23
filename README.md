@@ -205,6 +205,10 @@ The design focuses on three priorities: preserve exact operational error codes d
 - [FlashRank reranking](https://github.com/PrithivirajDamodaran/FlashRank)
 - [uv container integration](https://docs.astral.sh/uv/guides/integration/docker/)
 
+## License
+
+SentinelOps is licensed under the [MIT License](LICENSE).
+
 ## Repository map
 
 ```text
